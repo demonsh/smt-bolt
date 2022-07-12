@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/boltdb/bolt"
 	"github.com/iden3/go-merkletree-sql"
+	bolt "go.etcd.io/bbolt"
 )
 
 // BoltStore implements the db.BoltStore interface
@@ -104,10 +104,14 @@ func (m *BoltStore) SetRoot(_ context.Context, hash *merkletree.Hash) error {
 	root := &merkletree.Hash{}
 	copy(root[:], hash[:])
 
-	m.db.Update(func(tx *bolt.Tx) error {
+	err := m.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("tree"))
 		return b.Put([]byte("root"), []byte(root.Hex()))
 	})
+
+	if err != nil {
+		return err
+	}
 
 	m.currentRoot = root
 
@@ -158,7 +162,7 @@ func (m *BoltStore) List(_ context.Context, limit int) ([]merkletree.KV, error) 
 
 			res = append(res, merkletree.KV{K: merkletree.Clone(bytes.TrimPrefix(k, m.prefix)), V: *n})
 			count++
-			if count >= limit {
+			if limit != 0 && count >= limit {
 				break
 			}
 		}

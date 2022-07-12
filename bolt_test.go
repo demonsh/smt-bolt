@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/iden3/go-merkletree-sql"
 	"github.com/iden3/go-merkletree-sql/db/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	bolt "go.etcd.io/bbolt"
 )
 
 var testDB = "/tmp/test-mt.db"
@@ -159,7 +159,7 @@ func TestSetRoot(t *testing.T) {
 
 	r, err := merkletree.NewHashFromBigInt(big.NewInt(1))
 	assert.NoError(t, err)
-	b.SetRoot(context.Background(), r)
+	assert.NoError(t, b.SetRoot(context.Background(), r))
 
 	res, err := b.GetRoot(context.Background())
 	assert.NoError(t, err)
@@ -179,11 +179,12 @@ func TestLoadRoot(t *testing.T) {
 	root, err := merkletree.NewHashFromBigInt(big.NewInt(22))
 	assert.NoError(t, err)
 
-	b.Update(func(tx *bolt.Tx) error {
+	err = b.Update(func(tx *bolt.Tx) error {
 		bu, err := tx.CreateBucketIfNotExists([]byte("tree"))
 		assert.NoError(t, err)
 		return bu.Put([]byte("root"), []byte(root.Hex()))
 	})
+	assert.NoError(t, err)
 
 	s, err := NewBoltStorage(b)
 	assert.NoError(t, err)
@@ -207,20 +208,22 @@ func TestList(t *testing.T) {
 	assert.NoError(t, err)
 
 	// put another node
-	k, err = merkletree.NewHashFromBigInt(big.NewInt(2))
+	k2, err := merkletree.NewHashFromBigInt(big.NewInt(2))
 	assert.NoError(t, err)
 
-	v, err = merkletree.NewHashFromBigInt(big.NewInt(2))
+	v2, err := merkletree.NewHashFromBigInt(big.NewInt(2))
 	assert.NoError(t, err)
 
-	n = merkletree.NewNodeLeaf(k, v)
-	err = b.Put(context.Background(), k.BigInt().Bytes(), n)
+	n2 := merkletree.NewNodeLeaf(k2, v2)
+	err = b.Put(context.Background(), k2.BigInt().Bytes(), n2)
 	assert.NoError(t, err)
 
-	l, err := b.List(context.Background(), 0)
+	got, err := b.List(context.Background(), 0)
 	assert.NoError(t, err)
 
-	fmt.Printf("L: %+v", l)
+	exp := []merkletree.KV{{K: k.BigInt().Bytes(), V: *n}, {K: k2.BigInt().Bytes(), V: *n2}}
+
+	assert.Equal(t, exp, got)
 
 }
 
@@ -265,7 +268,8 @@ func TestProof(t *testing.T) {
 	tree, err := merkletree.NewMerkleTree(context.Background(), b, 10)
 	assert.NoError(t, err)
 
-	tree.Add(context.Background(), big.NewInt(0), big.NewInt(1))
+	err = tree.Add(context.Background(), big.NewInt(0), big.NewInt(1))
+	assert.NoError(t, err)
 
 	proof, _, err := tree.GenerateProof(context.Background(), big.NewInt(1), nil)
 	assert.NoError(t, err)
