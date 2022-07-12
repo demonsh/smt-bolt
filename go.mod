@@ -3,9 +3,9 @@ module smt-bolt
 go 1.18
 
 require (
-	github.com/boltdb/bolt v1.3.1
 	github.com/iden3/go-merkletree-sql v1.0.1
 	github.com/stretchr/testify v1.8.0
+	go.etcd.io/bbolt v1.3.6
 )
 
 require (
