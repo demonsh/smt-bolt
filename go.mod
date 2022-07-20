@@ -1,4 +1,4 @@
-module smt-bolt
+module github.com/demonsh/smt-bolt
 
 go 1.18
 
