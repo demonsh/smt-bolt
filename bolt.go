@@ -86,7 +86,6 @@ func (m *BoltStore) GetRoot(_ context.Context) (*merkletree.Hash, error) {
 			return merkletree.ErrNotFound
 		}
 
-		fmt.Println(string(v))
 		hash, err := merkletree.NewHashFromHex(string(v))
 		if err != nil {
 			return err
