@@ -81,7 +81,7 @@ func (m *BoltStore) GetRoot(_ context.Context) (*merkletree.Hash, error) {
 
 	err := m.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("tree"))
-		v := b.Get([]byte("root"))
+		v := b.Get(merkletree.Concat(m.prefix, []byte("root")))
 		if v == nil {
 			return merkletree.ErrNotFound
 		}
@@ -105,7 +105,7 @@ func (m *BoltStore) SetRoot(_ context.Context, hash *merkletree.Hash) error {
 
 	err := m.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("tree"))
-		return b.Put([]byte("root"), []byte(root.Hex()))
+		return b.Put(merkletree.Concat(m.prefix, []byte("root")), []byte(root.Hex()))
 	})
 
 	if err != nil {
